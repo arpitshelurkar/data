@@ -5,6 +5,7 @@ from tensorflow import keras
 from tensorflow.keras import layers
 
 
+
 train = pd.read_csv("../datasets/FNN and CNN/HandWritten MNIST/mnist_train.csv")
 test = pd.read_csv("../datasets/FNN and CNN/HandWritten MNIST/mnist_test.csv")
 y_train = train["label"].to_numpy()
