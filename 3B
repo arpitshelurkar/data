@@ -1,0 +1,54 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from tensorflow import keras
+from tensorflow.keras import layers
+from sklearn.metrics import roc_auc_score, classification_report
+
+
+
+df = pd.read_csv("../datasets/AutoEncoder/ECG/ecg.csv", header=None)
+data = df.to_numpy()
+x = data[:, :-1].astype("float32")
+y = (data[:, -1] != 1).astype(int) # label 1 = normal, else anomaly
+x_min = x.min()
+x_max = x.max()
+x = (x - x_min) / (x_max - x_min)
+x_train_norm = x[y == 0]
+print("normal:", x_train_norm.shape, "anomalies:", y.sum())
+
+
+
+model = keras.Sequential([
+layers.Input(shape=(140,)),
+layers.Dense(64, activation="relu"),
+layers.Dense(32, activation="relu"),
+layers.Dense(16, activation="relu"),
+layers.Dense(32, activation="relu"),
+layers.Dense(64, activation="relu"),
+layers.Dense(140),
+])
+model.compile(optimizer="adam", loss="mse")
+model.summary()
+
+
+history = model.fit(x_train_norm, x_train_norm, epochs=20, validation_split=0.1)
+
+
+
+recon = model.predict(x)
+err = np.mean((x - recon) ** 2, axis=1)
+auc = roc_auc_score(y, err)
+threshold = np.quantile(err[y == 0], 0.95)
+y_pred = (err > threshold).astype(int)
+print(f"AUC: {auc:.4f}")
+print(classification_report(y, y_pred, target_names=["normal", "anomaly"]))
+
+
+
+
+for k, v in history.history.items():
+plt.plot(v, label=k)
+plt.legend()
+plt.grid()
+plt.show()
