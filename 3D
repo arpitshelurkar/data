@@ -6,6 +6,7 @@ from tensorflow.keras import layers
 from sklearn.preprocessing import MinMaxScaler
 
 
+
 df = pd.read_csv("../datasets/AutoEncoder/NASA Turbofan ENgine/NASA TurboFan Engine.csv")
 df["max_cycle"] = df.groupby("unit")["cycle"].transform("max")
 df["healthy"] = df["cycle"] <= df["max_cycle"] * 0.2
