@@ -1,0 +1,35 @@
+import numpy as np
+import pandas as pd
+import re
+from gensim.models import Word2Vec
+from sklearn.metrics.pairwise import cosine_similarity
+
+
+df = pd.read_csv("../datasets/CBOW/twitter_dataset.csv")
+texts = df["Text"].dropna().tolist()
+sentences = []
+for tweet in texts:
+tokens = re.findall(r"[a-z]+", str(tweet).lower())
+sentences.append(tokens)
+w2v = Word2Vec(sentences, sg=0)
+
+
+
+doc_vecs = []
+for sent in sentences:
+vec = w2v.wv.get_mean_vector(sent, ignore_missing=True)
+doc_vecs.append(vec)
+doc_vecs = np.array(doc_vecs)
+print("doc matrix:", doc_vecs.shape)
+
+
+query = "happy day great"
+q_tokens = re.findall(r"[a-z]+", query.lower())
+q_vec = w2v.wv.get_mean_vector(q_tokens, ignore_missing=True).reshape(1, -1)
+sims = cosine_similarity(q_vec, doc_vecs).flatten()
+top = sims.argsort()[::-1][:5]
+print(f"query: {query!r}\n")
+for i in top:
+print(f" [{sims[i]:.3f}] {texts[i][:120]}")
+
+
