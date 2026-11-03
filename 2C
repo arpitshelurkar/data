@@ -1,0 +1,46 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from tensorflow import keras
+from tensorflow.keras import layers
+
+train = pd.read_csv("../datasets/FNN and CNN/Sign Language MNIST/sign_mnist_train.csv")
+test = pd.read_csv("../datasets/FNN and CNN/Sign Language MNIST/sign_mnist_test.csv")
+y_train = train["label"].to_numpy()
+y_test = test["label"].to_numpy()
+x_train = train.drop(columns="label").to_numpy().reshape(-1, 28, 28, 1)
+x_test = test.drop(columns="label").to_numpy().reshape(-1, 28, 28, 1)
+print(x_train.shape, x_test.shape)
+
+
+
+model = keras.Sequential([
+layers.Input(shape=(28, 28, 1)),
+layers.Rescaling(1./255),
+layers.Conv2D(32, 3, activation="relu"),
+layers.MaxPooling2D(),
+layers.Conv2D(64, 3, activation="relu"),
+layers.MaxPooling2D(),
+layers.Flatten(),
+layers.Dense(64, activation="relu"),
+layers.Dense(25, activation="softmax"),
+])
+model.compile(optimizer="adam", loss="sparse_categorical_crossentropy", metrics=["accuracy"])
+model.summary()
+
+
+history = model.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=5)
+
+
+
+loss, acc = model.evaluate(x_test, y_test)
+print(f"test loss: {loss:.4f} test accuracy: {acc:.4f}")
+
+
+
+for k, v in history.history.items():
+plt.plot(v, label=k)
+plt.legend()
+plt.grid()
+plt.show()
+
