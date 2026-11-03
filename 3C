@@ -1,0 +1,59 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from tensorflow import keras
+from tensorflow.keras import layers
+from sklearn.preprocessing import MinMaxScaler
+
+
+df = pd.read_csv("../datasets/AutoEncoder/Energy Consumption/energy consumption.csv")
+df = df.dropna()
+y = df["Anomaly_Label"].to_numpy().astype(int)
+x = df.drop(columns=["Timestamp", "Anomaly_Label"]).to_numpy().astype("float32")
+scaler = MinMaxScaler()
+x = scaler.fit_transform(x)
+# sliding windows (W=10)
+W = 10
+Xw = []
+yw = []
+for i in range(len(x) - W + 1):
+Xw.append(x[i:i+W])
+yw.append(y[i:i+W].max())
+Xw = np.array(Xw)
+yw = np.array(yw)
+Xw_norm = Xw[yw == 0]
+print("windows:", Xw.shape, "normal:", Xw_norm.shape)
+
+
+
+model = keras.Sequential([
+layers.Input(shape=(10, Xw.shape[2])),
+In [4]:
+layers.LSTM(16, activation="relu"),
+layers.RepeatVector(10),
+layers.LSTM(16, activation="relu", return_sequences=True),
+layers.TimeDistributed(layers.Dense(Xw.shape[2])),
+])
+model.compile(optimizer="adam", loss="mse")
+model.summary()
+
+
+
+history = model.fit(Xw_norm, Xw_norm, epochs=10, validation_split=0.1)
+
+
+
+recon = model.predict(Xw)
+err = np.mean((Xw - recon) ** 2, axis=(1, 2))
+threshold = np.quantile(err[yw == 0], 0.95)
+y_pred = (err > threshold).astype(int)
+print(f"anomalies predicted: {y_pred.sum()} actual: {yw.sum()}")
+print(f"threshold: {threshold:.6f}")
+
+
+
+for k, v in history.history.items():
+plt.plot(v, label=k)
+plt.legend()
+plt.grid()
+plt.show()
