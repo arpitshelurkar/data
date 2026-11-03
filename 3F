@@ -1,0 +1,49 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from tensorflow import keras
+from tensorflow.keras import layers
+from sklearn.metrics import roc_auc_score, classification_report
+
+
+
+train = pd.read_csv("../datasets/FNN and CNN/Sign Language MNIST/sign_mnist_train.csv")
+test = pd.read_csv("../datasets/FNN and CNN/Sign Language MNIST/sign_mnist_test.csv")
+df = pd.concat([train, test], ignore_index=True)
+y_anom = (df["label"] == 0).to_numpy().astype(int)
+x = df.drop(columns="label").to_numpy().astype("float32") / 255.0
+x_train_norm = x[y_anom == 0]
+print("normal (23 classes):", x_train_norm.shape, "anomaly (class 0):", y_anom.sum())
+
+
+
+model = keras.Sequential([
+layers.Input(shape=(784,)),
+layers.Dense(128, activation="relu"),
+layers.Dense(64, activation="relu"),
+layers.Dense(128, activation="relu"),
+layers.Dense(784, activation="sigmoid"),
+])
+model.compile(optimizer="adam", loss="mse")
+model.summary()
+
+
+
+history = model.fit(x_train_norm, x_train_norm, epochs=5, validation_split=0.1)
+
+
+
+recon = model.predict(x)
+err = np.mean((x - recon) ** 2, axis=1)
+auc = roc_auc_score(y_anom, err)
+threshold = np.quantile(err[y_anom == 0], 0.95)
+y_pred = (err > threshold).astype(int)
+print(f"AUC: {auc:.4f}")
+print(classification_report(y_anom, y_pred, target_names=["normal", "anomaly"]))
+
+
+for k, v in history.history.items():
+plt.plot(v, label=k)
+plt.legend()
+plt.grid()
+plt.show()
