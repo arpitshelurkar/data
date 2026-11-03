@@ -1,0 +1,24 @@
+import pandas as pd
+import re
+from gensim.models import Word2Vec
+
+
+
+df = pd.read_csv("../datasets/CBOW/twitter_dataset.csv")
+texts = df["Text"].dropna().tolist()
+sentences = []
+for tweet in texts:
+tokens = re.findall(r"[a-z]+", str(tweet).lower())
+sentences.append(tokens)
+print("tweets:", len(sentences))
+
+
+w2v = Word2Vec(sentences, sg=0)
+print("vocab:", len(w2v.wv))
+
+
+for word in ["love", "happy", "day"]:
+if word in w2v.wv:
+print(f"\nsimilar to {word!r}:")
+for w, s in w2v.wv.most_similar(word, topn=5):
+print(f" {w}: {s:.3f}")
