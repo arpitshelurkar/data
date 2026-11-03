@@ -1,0 +1,48 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from tensorflow import keras
+from tensorflow.keras import layers
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import roc_auc_score, classification_report
+
+
+df = pd.read_csv("../datasets/AutoEncoder/CreditCard/creditcard.csv")
+y = df["Class"].to_numpy()
+x = df.drop(columns=["Class", "Time"]).to_numpy()
+scaler = StandardScaler()
+x = scaler.fit_transform(x)
+x_train_norm = x[y == 0]
+print("normal train:", x_train_norm.shape, "frauds:", y.sum())
+
+
+
+model = keras.Sequential([
+layers.Input(shape=(29,)),
+layers.Dense(16, activation="relu"),
+layers.Dense(8, activation="relu"),
+layers.Dense(16, activation="relu"),
+layers.Dense(29),
+])
+model.compile(optimizer="adam", loss="mse")
+model.summary()
+
+
+history = model.fit(x_train_norm, x_train_norm, epochs=5, validation_split=0.1)
+
+
+recon = model.predict(x)
+err = np.mean((x - recon) ** 2, axis=1)
+auc = roc_auc_score(y, err)
+threshold = np.quantile(err[y == 0], 0.99)
+y_pred = (err > threshold).astype(int)
+print(f"AUC: {auc:.4f}")
+print(classification_report(y, y_pred, target_names=["normal", "fraud"]))
+
+
+
+for k, v in history.history.items():
+plt.plot(v, label=k)
+plt.legend()
+plt.grid()
+plt.show()
