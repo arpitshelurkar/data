@@ -28,7 +28,6 @@ print("windows:", Xw.shape, "normal:", Xw_norm.shape)
 
 model = keras.Sequential([
 layers.Input(shape=(10, Xw.shape[2])),
-In [4]:
 layers.LSTM(16, activation="relu"),
 layers.RepeatVector(10),
 layers.LSTM(16, activation="relu", return_sequences=True),
