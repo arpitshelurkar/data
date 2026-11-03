@@ -1,0 +1,50 @@
+import matplotlib.pyplot as plt
+from tensorflow import keras
+from tensorflow.keras import layers
+
+
+train = keras.utils.image_dataset_from_directory(
+"../datasets/Object Detection/caltech-101",
+image_size=(128, 128), validation_split=0.2, subset="training", seed=42)
+val = keras.utils.image_dataset_from_directory(
+"../datasets/Object Detection/caltech-101",
+image_size=(128, 128), validation_split=0.2, subset="validation", seed=42)
+n_classes = len(train.class_names)
+print("classes:", n_classes)
+train = train.prefetch(2)
+val = val.prefetch(2)
+
+
+
+base = keras.applications.VGG16(include_top=False, input_shape=(128, 128, 3))
+base.trainable = False
+model = keras.Sequential([
+layers.Input(shape=(128, 128, 3)),
+layers.Rescaling(1./255),
+base,
+layers.GlobalAveragePooling2D(),
+layers.Dense(128, activation="relu"),
+layers.Dense(n_classes, activation="softmax"),
+])
+model.compile(optimizer="adam", loss="sparse_categorical_crossentropy", metrics=["accuracy"])
+model.summary()
+
+
+
+history = model.fit(train, validation_data=val, epochs=3)
+
+
+
+loss, acc = model.evaluate(val)
+print(f"val acc (frozen base): {acc:.4f}")
+
+
+
+for k, v in history.history.items():
+plt.plot(v, label=k)
+plt.legend()
+plt.grid()
+plt.show()
+
+
+
